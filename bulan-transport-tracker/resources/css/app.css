@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    background-color: #F6F8FC;
+}
+
+/* Consistent focus ring across the app for keyboard accessibility */
+:focus-visible {
+    outline: 2px solid #2563EB;
+    outline-offset: 2px;
+}

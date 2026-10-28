@@ -1,0 +1,71 @@
+services:
+  # ---------- MySQL (private, self-hosted, persistent disk) ----------
+  - type: pserv
+    name: bulan-mysql
+    runtime: docker
+    region: singapore
+    plan: starter            # persistent disks require a paid instance
+    dockerContext: .
+    dockerfilePath: ./mysql/Dockerfile
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 5
+    envVars:
+      - key: MYSQL_DATABASE
+        value: bulan_transport_tracker
+      - key: MYSQL_USER
+        value: bulan
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+
+  # ---------- Laravel web app ----------
+  - type: web
+    name: bulan-transport-tracker
+    runtime: docker
+    region: singapore        # must match the MySQL service to use the private network
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: Bulan Transport Tracker
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false            # paste output of: php artisan key:generate --show
+      - key: APP_URL
+        sync: false            # e.g. https://bulan-transport-tracker.onrender.com
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: bulan-mysql
+          property: host
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_DATABASE
+        value: bulan_transport_tracker
+      - key: DB_USERNAME
+        value: bulan
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: bulan-mysql
+          envVarKey: MYSQL_PASSWORD
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: RUN_SEEDERS
+        value: "false"
